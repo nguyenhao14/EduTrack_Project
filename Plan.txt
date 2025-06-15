@@ -1,0 +1,345 @@
+🎓 DỰ ÁN LỚN: EDU-TRACK – Hệ thống quản lý học tập & học sinh
+🧩 Mô hình kiến trúc:
+Frontend: Windows Forms (VB.NET)
+
+Backend: ASP.NET Web API (trả JSON)
+
+CSDL: Oracle
+
+Phân lớp rõ ràng: UI ➝ Service ➝ Transport ➝ API ➝ DB
+
+🧠 Chức năng tổng thể:
+👤 1. Quản lý người dùng
+Đăng nhập (Gmail/Username + mật khẩu mã hóa)
+
+Phân quyền: Học sinh, Giáo viên, Quản trị viên
+
+Chỉnh sửa hồ sơ, đổi mật khẩu
+
+🎒 2. Quản lý học sinh
+Danh sách học sinh theo lớp
+
+Thêm/sửa/xóa học sinh
+
+Tìm kiếm học sinh theo tên, mã, lớp
+
+📚 3. Quản lý khóa học & môn học
+Tạo khóa học (Toán 10, Lý 12…)
+
+Gán môn học vào khóa học
+
+Giao môn cho giáo viên
+
+📝 4. Quản lý điểm & bài kiểm tra
+Nhập điểm theo môn – theo lớp
+
+Xem lịch sử điểm của học sinh
+
+Thống kê học lực
+
+🗂️ 5. Học liệu & bài tập
+Giáo viên upload tài liệu (PDF, Word)
+
+Học sinh tải về học
+
+Giao và nộp bài tập
+
+🗓️ 6. Lịch học / Lịch thi
+Tạo lịch học tuần cho từng lớp
+
+Lên lịch thi và phân phòng
+
+Thông báo tự động đến học sinh
+
+💬 7. Chat nội bộ giữa giáo viên và học sinh
+Tích hợp chat cơ bản (WinForms)
+
+Gửi tin nhắn văn bản, file đính kèm nhỏ
+
+Học sinh gửi câu hỏi – GV trả lời
+
+📊 8. Báo cáo & thống kê
+Học lực theo lớp
+
+Biểu đồ tiến trình học tập
+
+Danh sách học sinh yếu – cần hỗ trợ
+-------------------------------------------------------
+⚙️ Công nghệ gợi ý triển khai
+Thành phần	Công nghệ sử dụng
+UI	Windows Forms (VB.NET)
+Giao tiếp	HttpClient gọi đến ASP.NET Web API
+API	ASP.NET Web API (.NET 6/7)
+Database	Oracle 19c
+ORM/API DB	Dapper hoặc ADO.NET
+Mật khẩu	SHA256 / Bcrypt hash
+File upload/download	Tích hợp API nhận/trả tệp PDF
+--------------------------------------------------------
+Cấu trúc phân tầng gợi ý
+Windows Forms Project:
+markdown
+Sao chép
+Chỉnh sửa
+- EduTrack.UI
+   - Forms/
+   - Controls/
+   - Views/
+- EduTrack.Service
+   - UserService.vb
+   - StudentService.vb
+- EduTrack.Transport
+   - DTO/
+---------------------------------------------------------
+ASP.NET Web API Project:
+diff
+Sao chép
+Chỉnh sửa
+- Controllers/
+- Models/
+- Services/
+- Repositories/
+---------------------------------------------------------
+ Bảo mật:
+JWT Token để xác thực người dùng (có thể lưu trong local file hoặc Registry)
+
+Role-based Authorization: Admin/GV/HS phân quyền chi tiết
+
+Logging nhật ký thao tác người dùng
+
+
+-----------------------------------------------------------
+DB:
+✅ TỔNG QUAN CẤU TRÚC
+Hệ thống gồm các nhóm bảng:
+
+Nhóm chức năng	Bảng chính
+Người dùng & phân quyền	USERS, ROLES, USER_ROLES, USER_PROFILE
+Quản lý lớp học	CLASSES, STUDENT_CLASS, TEACHER_CLASS
+Môn học & giảng dạy	SUBJECTS, TEACHER_SUBJECT, COURSE
+Điểm số & đánh giá	EXAMS, SCORES
+Học liệu & bài tập	FILES, ASSIGNMENTS, SUBMISSIONS
+Lịch học & thi	SCHEDULES, EXAM_SCHEDULES
+Giao tiếp nội bộ	MESSAGES, NOTIFICATIONS
+
+🧩 1. USERS (Tài khoản người dùng)
+sql
+Sao chép
+Chỉnh sửa
+CREATE TABLE USERS (
+    USER_ID        VARCHAR2(20) PRIMARY KEY,
+    EMAIL          VARCHAR2(100) UNIQUE NOT NULL,
+    USERNAME       VARCHAR2(50) UNIQUE NOT NULL,
+    PASSWORD_HASH  VARCHAR2(256) NOT NULL,
+    CREATED_AT     DATE DEFAULT SYSDATE,
+    LAST_LOGIN     DATE,
+    IS_ACTIVE      CHAR(1) DEFAULT 'Y' -- 'Y', 'N'
+);
+🧩 2. ROLES (Quyền hệ thống) & USER_ROLES (Gán vai trò)
+sql
+Sao chép
+Chỉnh sửa
+CREATE TABLE ROLES (
+    ROLE_ID    VARCHAR2(10) PRIMARY KEY,
+    ROLE_NAME  VARCHAR2(50) UNIQUE
+);
+
+CREATE TABLE USER_ROLES (
+    USER_ID   VARCHAR2(20),
+    ROLE_ID   VARCHAR2(10),
+    PRIMARY KEY (USER_ID, ROLE_ID),
+    FOREIGN KEY (USER_ID) REFERENCES USERS(USER_ID),
+    FOREIGN KEY (ROLE_ID) REFERENCES ROLES(ROLE_ID)
+);
+💡 Cho phép 1 user có nhiều vai trò (Admin + Teacher, chẳng hạn)
+
+🧩 3. USER_PROFILE (Thông tin chi tiết)
+sql
+Sao chép
+Chỉnh sửa
+CREATE TABLE USER_PROFILE (
+    USER_ID     VARCHAR2(20) PRIMARY KEY,
+    FULL_NAME   VARCHAR2(100),
+    GENDER      CHAR(1), -- 'M', 'F'
+    DOB         DATE,
+    PHONE       VARCHAR2(15),
+    ADDRESS     VARCHAR2(255),
+    AVATAR_PATH VARCHAR2(255),
+    FOREIGN KEY (USER_ID) REFERENCES USERS(USER_ID)
+);
+🧩 4. CLASSES – Lớp học
+sql
+Sao chép
+Chỉnh sửa
+CREATE TABLE CLASSES (
+    CLASS_ID     VARCHAR2(10) PRIMARY KEY,
+    CLASS_NAME   VARCHAR2(50),
+    GRADE_LEVEL  NUMBER(2),
+    CREATED_AT   DATE DEFAULT SYSDATE,
+    IS_ACTIVE    CHAR(1) DEFAULT 'Y'
+);
+🧩 5. STUDENT_CLASS & TEACHER_CLASS
+sql
+Sao chép
+Chỉnh sửa
+CREATE TABLE STUDENT_CLASS (
+    USER_ID   VARCHAR2(20),
+    CLASS_ID  VARCHAR2(10),
+    ENROLLED_DATE DATE DEFAULT SYSDATE,
+    PRIMARY KEY (USER_ID, CLASS_ID),
+    FOREIGN KEY (USER_ID) REFERENCES USERS(USER_ID),
+    FOREIGN KEY (CLASS_ID) REFERENCES CLASSES(CLASS_ID)
+);
+
+CREATE TABLE TEACHER_CLASS (
+    USER_ID   VARCHAR2(20),
+    CLASS_ID  VARCHAR2(10),
+    ASSIGNED_DATE DATE DEFAULT SYSDATE,
+    PRIMARY KEY (USER_ID, CLASS_ID),
+    FOREIGN KEY (USER_ID) REFERENCES USERS(USER_ID),
+    FOREIGN KEY (CLASS_ID) REFERENCES CLASSES(CLASS_ID)
+);
+🧩 6. SUBJECTS & TEACHER_SUBJECT & COURSE
+sql
+Sao chép
+Chỉnh sửa
+CREATE TABLE SUBJECTS (
+    SUBJECT_ID    VARCHAR2(10) PRIMARY KEY,
+    SUBJECT_NAME  VARCHAR2(100)
+);
+
+CREATE TABLE TEACHER_SUBJECT (
+    USER_ID     VARCHAR2(20),
+    SUBJECT_ID  VARCHAR2(10),
+    PRIMARY KEY (USER_ID, SUBJECT_ID),
+    FOREIGN KEY (USER_ID) REFERENCES USERS(USER_ID),
+    FOREIGN KEY (SUBJECT_ID) REFERENCES SUBJECTS(SUBJECT_ID)
+);
+
+-- COURSE = Môn học cụ thể gắn với lớp
+CREATE TABLE COURSES (
+    COURSE_ID     VARCHAR2(20) PRIMARY KEY,
+    SUBJECT_ID    VARCHAR2(10),
+    CLASS_ID      VARCHAR2(10),
+    TEACHER_ID    VARCHAR2(20),
+    START_DATE    DATE,
+    END_DATE      DATE,
+    FOREIGN KEY (SUBJECT_ID) REFERENCES SUBJECTS(SUBJECT_ID),
+    FOREIGN KEY (CLASS_ID) REFERENCES CLASSES(CLASS_ID),
+    FOREIGN KEY (TEACHER_ID) REFERENCES USERS(USER_ID)
+);
+🧩 7. EXAMS & SCORES
+sql
+Sao chép
+Chỉnh sửa
+CREATE TABLE EXAMS (
+    EXAM_ID      VARCHAR2(20) PRIMARY KEY,
+    COURSE_ID    VARCHAR2(20),
+    EXAM_TYPE    VARCHAR2(20), -- Midterm, Final...
+    EXAM_DATE    DATE,
+    MAX_SCORE    NUMBER(5,2),
+    FOREIGN KEY (COURSE_ID) REFERENCES COURSES(COURSE_ID)
+);
+
+CREATE TABLE SCORES (
+    SCORE_ID     VARCHAR2(20) PRIMARY KEY,
+    USER_ID      VARCHAR2(20),
+    EXAM_ID      VARCHAR2(20),
+    SCORE        NUMBER(5,2),
+    SCORED_DATE  DATE DEFAULT SYSDATE,
+    FOREIGN KEY (USER_ID) REFERENCES USERS(USER_ID),
+    FOREIGN KEY (EXAM_ID) REFERENCES EXAMS(EXAM_ID)
+);
+🧩 8. FILES & ASSIGNMENTS & SUBMISSIONS
+sql
+Sao chép
+Chỉnh sửa
+CREATE TABLE FILES (
+    FILE_ID      VARCHAR2(20) PRIMARY KEY,
+    TITLE        VARCHAR2(100),
+    FILE_PATH    VARCHAR2(255),
+    UPLOADED_BY  VARCHAR2(20),
+    CLASS_ID     VARCHAR2(10),
+    UPLOAD_DATE  DATE DEFAULT SYSDATE,
+    FOREIGN KEY (UPLOADED_BY) REFERENCES USERS(USER_ID),
+    FOREIGN KEY (CLASS_ID) REFERENCES CLASSES(CLASS_ID)
+);
+
+CREATE TABLE ASSIGNMENTS (
+    ASSIGNMENT_ID  VARCHAR2(20) PRIMARY KEY,
+    COURSE_ID      VARCHAR2(20),
+    TITLE          VARCHAR2(100),
+    DESCRIPTION    CLOB,
+    DUE_DATE       DATE,
+    CREATED_AT     DATE DEFAULT SYSDATE,
+    FOREIGN KEY (COURSE_ID) REFERENCES COURSES(COURSE_ID)
+);
+
+CREATE TABLE SUBMISSIONS (
+    SUBMISSION_ID    VARCHAR2(20) PRIMARY KEY,
+    ASSIGNMENT_ID    VARCHAR2(20),
+    USER_ID          VARCHAR2(20),
+    SUBMIT_DATE      DATE DEFAULT SYSDATE,
+    FILE_PATH        VARCHAR2(255),
+    GRADE            NUMBER(5,2),
+    FOREIGN KEY (ASSIGNMENT_ID) REFERENCES ASSIGNMENTS(ASSIGNMENT_ID),
+    FOREIGN KEY (USER_ID) REFERENCES USERS(USER_ID)
+);
+🧩 9. SCHEDULES & EXAM_SCHEDULES
+sql
+Sao chép
+Chỉnh sửa
+CREATE TABLE SCHEDULES (
+    SCHEDULE_ID   VARCHAR2(20) PRIMARY KEY,
+    COURSE_ID     VARCHAR2(20),
+    DAY_OF_WEEK   VARCHAR2(10), -- MONDAY
+    START_TIME    VARCHAR2(5),  -- HH:mm
+    END_TIME      VARCHAR2(5),
+    ROOM_NAME     VARCHAR2(50),
+    FOREIGN KEY (COURSE_ID) REFERENCES COURSES(COURSE_ID)
+);
+
+CREATE TABLE EXAM_SCHEDULES (
+    EXAM_ID     VARCHAR2(20),
+    ROOM_NAME   VARCHAR2(50),
+    PROCTOR_ID  VARCHAR2(20),
+    FOREIGN KEY (EXAM_ID) REFERENCES EXAMS(EXAM_ID),
+    FOREIGN KEY (PROCTOR_ID) REFERENCES USERS(USER_ID)
+);
+🧩 10. MESSAGES & NOTIFICATIONS
+sql
+Sao chép
+Chỉnh sửa
+CREATE TABLE MESSAGES (
+    MESSAGE_ID    VARCHAR2(20) PRIMARY KEY,
+    SENDER_ID     VARCHAR2(20),
+    RECEIVER_ID   VARCHAR2(20),
+    MESSAGE_TEXT  CLOB,
+    SENT_AT       DATE DEFAULT SYSDATE,
+    FOREIGN KEY (SENDER_ID) REFERENCES USERS(USER_ID),
+    FOREIGN KEY (RECEIVER_ID) REFERENCES USERS(USER_ID)
+);
+
+CREATE TABLE NOTIFICATIONS (
+    NOTIF_ID      VARCHAR2(20) PRIMARY KEY,
+    USER_ID       VARCHAR2(20),
+    TITLE         VARCHAR2(100),
+    MESSAGE       VARCHAR2(255),
+    CREATED_AT    DATE DEFAULT SYSDATE,
+    IS_READ       CHAR(1) DEFAULT 'N',
+    FOREIGN KEY (USER_ID) REFERENCES USERS(USER_ID)
+);
+🎯 Kết luận:
+Phân quyền tách biệt qua bảng ROLES, USER_ROLES (linh hoạt mở rộng).
+
+Dữ liệu có trường ngày CREATED_AT, DUE_DATE, SCORED_DATE, ENROLLED_DATE, v.v.
+
+Có thể triển khai đầy đủ chức năng như quản lý người dùng, khóa học, bài tập, điểm số, nhắn tin.
+
+📁 Muốn mình gửi script SQL đầy đủ?
+Mình có thể:
+
+✅ Tạo 1 file CreateEduTrackTables.sql cho bạn chạy trong SQL Developer
+
+✅ Hướng dẫn vẽ sơ đồ ERD bằng công cụ (draw.io hoặc dbdiagram.io)
+
+✅ Bắt đầu code WinForms + API để dùng schema này
