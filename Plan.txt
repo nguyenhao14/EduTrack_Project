@@ -335,11 +335,3 @@ Dữ liệu có trường ngày CREATED_AT, DUE_DATE, SCORED_DATE, ENROLLED_DATE
 
 Có thể triển khai đầy đủ chức năng như quản lý người dùng, khóa học, bài tập, điểm số, nhắn tin.
 
-📁 Muốn mình gửi script SQL đầy đủ?
-Mình có thể:
-
-✅ Tạo 1 file CreateEduTrackTables.sql cho bạn chạy trong SQL Developer
-
-✅ Hướng dẫn vẽ sơ đồ ERD bằng công cụ (draw.io hoặc dbdiagram.io)
-
-✅ Bắt đầu code WinForms + API để dùng schema này
